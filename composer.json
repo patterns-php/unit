@@ -1,0 +1,38 @@
+{
+    "name": "patterns/unit",
+    "description": "Unit pattern - a named, versioned identity for code that produces data, so every record can say which unit and which version made it.",
+    "type": "library",
+    "keywords": [
+        "unit",
+        "pattern",
+        "dna",
+        "identity",
+        "versioning",
+        "provenance",
+        "contract"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5 || ^10.0 || ^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Patterns\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Patterns\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}
