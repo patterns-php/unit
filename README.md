@@ -154,6 +154,17 @@ final class RankingUnit implements IUnit
 {
     public const VERSION = '1.1.0';
 
+    /** The identity, declared once. */
+    private const DNA = [
+        'id'          => 'supplier-ranking',
+        'version'     => self::VERSION,
+        'description' => 'Ranks suppliers by weighted velocity.',
+        'versions'    => [
+            ['version' => '1.0.0', 'date' => '2026-01-15', 'notes' => 'Initial release'],
+            ['version' => '1.1.0', 'date' => '2026-10-05', 'notes' => 'Weight cadence per supplier'],
+        ],
+    ];
+
     /** @param array<string, mixed> $config */
     private function __construct(
         private readonly RankingSchema $dna,
@@ -165,23 +176,9 @@ final class RankingUnit implements IUnit
     public static function create(array $props): self
     {
         return new self(
-            RankingSchema::create($props['dna'] ?? self::dna()),
+            RankingSchema::create($props['dna'] ?? self::DNA),
             (array) ($props['config'] ?? []),
         );
-    }
-
-    /** @return array<string, mixed> */
-    public static function dna(): array
-    {
-        return [
-            'id'          => 'supplier-ranking',
-            'version'     => self::VERSION,
-            'description' => 'Ranks suppliers by weighted velocity.',
-            'versions'    => [
-                ['version' => '1.0.0', 'date' => '2026-01-15', 'notes' => 'Initial release'],
-                ['version' => '1.1.0', 'date' => '2026-10-05', 'notes' => 'Weight cadence per supplier'],
-            ],
-        ];
     }
 
     public function dna(): IUnitSchema
@@ -207,6 +204,10 @@ final class RankingUnit implements IUnit
 
 That is the whole pattern: a schema, a factory, the work. No base class, no
 registry, no capability table.
+
+`dna()` is **instance-only** by contract, so the identity literal lives in a
+private constant instead of a second method. That gives exactly one place to
+change the identity - and avoids two methods competing for the same name.
 
 ## DNA in practice
 
