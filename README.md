@@ -11,7 +11,7 @@ Part of the **Patterns** collection: small, rock-solid, dependency-free building
 blocks. One pattern, one package.
 
 - Package: `patterns/unit`
-- Contracts: `Patterns\IUnit`, `Patterns\IUnitSchema`
+- Contracts: `Patterns\IUnit`, `Patterns\IUnitSchema`, `Patterns\IOperator`
 - Dependencies: **none**
 - PHP: `>=8.1`
 
@@ -57,7 +57,6 @@ interface IUnitSchema extends JsonSerializable
     public function version(): string;                  // semantic version of that name
     public function label(): string;                    // "SupplierRanking v1.1.0"
     public function description(): string;              // one sentence on what it is for
-    public function versions(): array;                  // version ledger, oldest first
     public function toArray(): array;                   // the persisted shape
     public static function create(array $props): self;  // read back what toArray() wrote
 }
@@ -79,7 +78,7 @@ contains value objects.
 | Two equal ones | interchangeable | still two versions of the same named thing |
 | Serialization | the whole object | the DNA; the rest is the implementation's business |
 | Lifetime | created, compared, discarded | created, versioned, deployed, **referenced by stored data** |
-| Version history | none — a value has no history | part of the contract (`versions()`) |
+| Change over time | a changed value is a different value | the same name, a new version |
 | Answers | *is this a valid value?* | *which code produced this, and which version?* |
 
 A `Money(1000, 'EUR')` **is** its data: two of them with the same amount and
@@ -122,7 +121,6 @@ final class RankingSchema implements IUnitSchema
             'version'     => (string) $props['version'],
             'label'       => (string) ($props['label'] ?? $props['id'] . ' v' . $props['version']),
             'description' => (string) ($props['description'] ?? ''),
-            'versions'    => array_values((array) ($props['versions'] ?? [])),
         ]);
     }
 
@@ -130,14 +128,13 @@ final class RankingSchema implements IUnitSchema
     public function version(): string      { return $this->props['version']; }
     public function label(): string        { return $this->props['label']; }
     public function description(): string  { return $this->props['description']; }
-    public function versions(): array      { return $this->props['versions']; }
     public function toArray(): array       { return $this->props; }
     public function jsonSerialize(): array { return $this->props; }
 }
 ```
 
 You may extend `Patterns\ValueObject` for equality and JSON for free — or not.
-The contract asks for seven methods and nothing about your base class.
+The contract asks for six methods and nothing about your base class.
 
 ### 2. The unit
 
@@ -159,10 +156,6 @@ final class RankingUnit implements IUnit
         'id'          => 'supplier-ranking',
         'version'     => self::VERSION,
         'description' => 'Ranks suppliers by weighted velocity.',
-        'versions'    => [
-            ['version' => '1.0.0', 'date' => '2026-01-15', 'notes' => 'Initial release'],
-            ['version' => '1.1.0', 'date' => '2026-10-05', 'notes' => 'Weight cadence per supplier'],
-        ],
     ];
 
     /** @param array<string, mixed> $config */
@@ -236,31 +229,32 @@ foreach ($suppliers as $supplier) {
     "id": "supplier-ranking",
     "version": "1.1.0",
     "label": "SupplierRanking v1.1.0",
-    "description": "Ranks suppliers by weighted velocity.",
-    "versions": [
-      { "version": "1.0.0", "date": "2026-01-15", "notes": "Initial release" },
-      { "version": "1.1.0", "date": "2026-10-05", "notes": "Weight cadence per supplier" }
-    ]
+    "description": "Ranks suppliers by weighted velocity."
   }
 }
 ```
 
 ```php
-// 2. read: which version produced this row - and what changed in it?
+// 2. read: which version produced this row
 $dna = RankingSchema::create($row['unit']);
 
 $dna->label();       // "SupplierRanking v1.1.0"
-$dna->versions();    // the ledger: 1.0.0 initial, 1.1.0 cadence weighting
+$dna->version();     // "1.1.0" - the answer to "which code made this number?"
 $dna->description(); // what that version was for
 ```
 
-The ledger is the part that pays off. It is not a changelog in a file nobody
-reads — it travels *with the data*, so a figure can explain itself:
+The version is the part that pays off, and it only works because it travels
+*with the data*: a figure can explain itself.
 
-> These numbers came from `supplier-ranking v1.0.0`. In `1.1.0` cadence became
-> weighted per supplier, so any row still tagged `1.0.0` predates that change.
+> These numbers came from `supplier-ranking v1.1.0`.
 
-Without it, that sentence is guesswork.
+**What changed** between two versions is the repository's job - the tag, the
+diff, the changelog. The row only has to name the version; git explains it.
+Copying a release ledger into every row would mean a table of price rows each
+carrying the full history of the algorithm that produced them, which is payload
+nothing reads. If a unit ever has to run several versions of *itself* at once,
+and pin each to versions of other units, that is a per-unit contract of its own -
+not the general shape.
 
 ## Use cases where unit versioning is a game changer
 
@@ -299,7 +293,7 @@ log stream tells you which version of which component is speaking.
 | capabilities, registries, `execute()` | composition is a constructor; dispatch is the caller's job |
 | teach / learn, runtime capability transfer | a registry's problem, not a unit's |
 | events, emitters, channels | compose `patterns/event-channel` when you need it |
-| validators, builders, base classes | the pattern asks for seven methods; supply the rest yourself |
+| validators, builders, base classes | the pattern asks for six methods; supply the rest yourself |
 
 The contract is intentionally narrow so that a unit can be *anything*: a
 strongly typed class with readonly props, an array-backed record, a database row,
@@ -309,8 +303,8 @@ a remote proxy, an enum case.
 
 1. **Name it.** Pick an `id` you will never want to change — a name, not a class.
 2. **Version it.** Semantic version. Change it whenever the output can change.
-3. **Keep the ledger honest.** Record *released* versions only; the ledger is
-   what lets a stored record say which version produced it.
+3. **Bump it when the output can change.** Then any stored record can name the
+   code that produced it. *What* changed goes in the changelog and the tag.
 4. **Make `create()` the only entry point.** No public constructor.
 5. **Persist the DNA with the data.** A version you did not store is a version
    you cannot recover.

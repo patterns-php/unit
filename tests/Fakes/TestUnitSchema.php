@@ -32,7 +32,6 @@ final class TestUnitSchema implements IUnitSchema
             'version'     => (string) ($props['version'] ?? ''),
             'label'       => (string) ($props['label'] ?? ''),
             'description' => (string) ($props['description'] ?? ''),
-            'versions'    => array_values((array) ($props['versions'] ?? [])),
         ]);
     }
 
@@ -54,14 +53,6 @@ final class TestUnitSchema implements IUnitSchema
     public function description(): string
     {
         return $this->props['description'];
-    }
-
-    /**
-     * @return list<array<string, string>>
-     */
-    public function versions(): array
-    {
-        return $this->props['versions'];
     }
 
     /**

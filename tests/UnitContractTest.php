@@ -25,10 +25,10 @@ final class UnitContractTest extends TestCase
         $this->assertSame(['create', 'dna', 'whoami'], self::declaredMethods(IUnit::class));
     }
 
-    public function testIUnitSchemaDeclaresExactlySevenMethods(): void
+    public function testIUnitSchemaDeclaresExactlySixMethods(): void
     {
         $this->assertSame(
-            ['create', 'description', 'id', 'label', 'toArray', 'version', 'versions'],
+            ['create', 'description', 'id', 'label', 'toArray', 'version'],
             self::declaredMethods(IUnitSchema::class)
         );
     }
@@ -94,10 +94,6 @@ final class UnitContractTest extends TestCase
             'version'     => '1.1.0',
             'label'       => 'SupplierRanking v1.1.0',
             'description' => 'Ranks suppliers by weighted velocity.',
-            'versions'    => [
-                ['version' => '1.0.0', 'date' => '2026-01-15', 'notes' => 'Initial release'],
-                ['version' => '1.1.0', 'date' => '2026-10-05', 'notes' => 'Weight cadence per supplier'],
-            ],
         ]);
 
         $restored = TestUnitSchema::create($dna->toArray());
@@ -105,7 +101,6 @@ final class UnitContractTest extends TestCase
         $this->assertSame($dna->toArray(), $restored->toArray());
         $this->assertSame($dna->toArray(), $restored->jsonSerialize());
         $this->assertSame(json_encode($dna), json_encode($restored));
-        $this->assertCount(2, $restored->versions());
     }
 
     // -----------------------------------------------------------------------
